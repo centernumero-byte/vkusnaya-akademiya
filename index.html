@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="ru" data-lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Вкусная академия</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+/* ===== Две темы: русская — изумрудная с шампань-золотом, казахская — небесно-синяя с золотом ===== */
+:root, html[data-lang="ru"] {
+  --bg1:#0b2420; --bg2:#123a33; --panel1:#16453d; --panel2:#0f302a; --card1:#1d5248; --card2:#133c35;
+  --glow:rgba(120,200,170,.20); --gold:#f0c987; --gold2:#e3b06a; --text:#f4ecdc; --muted:#c3d2c8;
+  --line:rgba(240,201,135,.55); --line-soft:rgba(240,201,135,.25); --hover:rgba(120,200,170,.16);
+  --active1:rgba(60,150,125,.55); --active2:rgba(40,110,95,.35); --btn1:#2f7d6b; --btn2:#1f5e50; --input:rgba(0,0,0,.22);
+}
+html[data-lang="kz"] {
+  --bg1:#071a3d; --bg2:#0f2d63; --panel1:#16387a; --panel2:#0d2452; --card1:#1d4590; --card2:#132f66;
+  --glow:rgba(90,170,240,.24); --gold:#f6cf5a; --gold2:#e8b93a; --text:#f3f1e6; --muted:#bccbe6;
+  --line:rgba(246,207,90,.6); --line-soft:rgba(246,207,90,.25); --hover:rgba(90,160,240,.18);
+  --active1:rgba(40,120,210,.6); --active2:rgba(30,90,170,.38); --btn1:#2a6fd0; --btn2:#1b4f9f; --input:rgba(0,0,0,.22);
+}
+* { box-sizing:border-box; }
+html, body { margin:0; }
+body { font-family:Arial, Helvetica, sans-serif; color:var(--text); min-height:100vh;
+  background: radial-gradient(circle at 72% 12%, var(--glow), transparent 30%),
+              radial-gradient(circle at 18% 85%, var(--glow), transparent 32%),
+              linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg1) 100%);
+  background-attachment:fixed; transition:background .4s, color .4s; -webkit-font-smoothing:antialiased; }
+h1,h2,h3 { font-family:"PT Serif", Georgia, serif; font-weight:500; color:var(--gold); margin:0 0 .5em; line-height:1.2; }
+button, input, select, textarea { font:inherit; color:inherit; }
+a { color:var(--gold); }
+.hidden { display:none !important; }
+#app { min-height:100vh; display:flex; flex-direction:column; }
+
+/* ===== Каркас: меню слева + основная область ===== */
+.platform { flex:1; display:flex; padding:8px; }
+.sidebar { width:250px; flex-shrink:0; padding:26px 16px 20px; border:1px solid var(--line); border-radius:18px 0 0 18px;
+  background: radial-gradient(circle at 50% 8%, var(--glow), transparent 30%), linear-gradient(180deg, var(--panel1) 0%, var(--panel2) 100%);
+  display:flex; flex-direction:column; transition:background .4s; }
+.logo { text-align:center; margin-bottom:30px; }
+.logo-symbol { width:96px; height:96px; margin:0 auto 14px; border-radius:50%; border:2px solid var(--gold2);
+  display:flex; align-items:center; justify-content:center; font-size:44px;
+  box-shadow:0 0 22px rgba(240,200,120,.28), inset 0 0 20px rgba(240,200,120,.10); }
+.logo-title { font-family:"PT Serif", Georgia, serif; font-size:24px; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; }
+.logo-subtitle { margin-top:6px; font-size:19px; color:var(--gold2); }
+.nav { display:flex; flex-direction:column; gap:6px; }
+.nav-sep { height:1px; background:var(--line-soft); margin:8px 6px; }
+.nav-item { width:100%; min-height:46px; padding:11px 14px; border-radius:12px; border:1px solid transparent; background:transparent;
+  color:var(--text); font-size:16px; text-align:left; cursor:pointer; display:flex; align-items:center; gap:4px;
+  transition:background .25s, border-color .25s, color .25s; }
+.nav-item:hover { background:var(--hover); border-color:var(--line-soft); }
+.nav-item.active { background:linear-gradient(90deg, var(--active1), var(--active2)); border-color:var(--gold2); color:var(--gold); box-shadow:0 0 15px rgba(240,200,120,.10); }
+.nav-icon { display:inline-flex; width:32px; min-width:32px; justify-content:center; font-size:20px; }
+.nav .logout { margin-top:14px; color:var(--gold); }
+.sidebar-bottom { margin-top:auto; padding-top:14px; }
+
+.main { flex:1; min-width:0; padding:34px 30px 30px; border:1px solid var(--line); border-left:none; border-radius:0 18px 18px 0;
+  background: radial-gradient(circle at 55% 4%, var(--glow), transparent 30%), linear-gradient(160deg, var(--panel2), var(--bg2));
+  display:flex; flex-direction:column; transition:background .4s; }
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:26px; flex-wrap:wrap; }
+.topbar h1 { margin:0; font-size:36px; }
+.account { display:flex; align-items:center; gap:12px; }
+.lang-switch { display:flex; border:1px solid var(--line); border-radius:999px; padding:3px; background:var(--input); }
+.lang-switch button { border:0; background:transparent; color:var(--text); padding:7px 14px; border-radius:999px; cursor:pointer; font-size:14px; }
+.lang-switch button.on { background:linear-gradient(90deg, var(--btn1), var(--btn2)); color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold2); }
+.burger { display:none; }
+.side-head { display:block; }
+#main { flex:1; }
+
+/* ===== Общие элементы ===== */
+.card { border:1px solid var(--line); border-radius:18px; padding:22px;
+  background: radial-gradient(circle at 50% 0%, var(--glow), transparent 45%), linear-gradient(145deg, var(--card1), var(--card2));
+  box-shadow:0 10px 30px rgba(0,0,0,.18); }
+.muted { color:var(--muted); }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.btn { border:1px solid var(--gold2); background:linear-gradient(90deg, var(--btn1), var(--btn2)); color:var(--gold);
+  padding:11px 18px; border-radius:11px; cursor:pointer; font-size:15px; }
+.btn:hover { filter:brightness(1.12); }
+.btn.ghost { background:transparent; color:var(--text); border-color:var(--line-soft); }
+.btn.small { padding:7px 11px; font-size:13px; border-radius:9px; }
+.btn.danger { background:linear-gradient(90deg,#9b3434,#7a2626); border-color:#d98a8a; color:#ffe2e2; }
+input, select, textarea { width:100%; border:1px solid var(--line-soft); background:var(--input); color:var(--text); border-radius:10px; padding:11px 13px; outline:none; }
+select option { color:#111; }
+input:focus, select:focus, textarea:focus { border-color:var(--gold2); }
+input::placeholder, textarea::placeholder { color:var(--muted); opacity:.75; }
+textarea { min-height:110px; resize:vertical; }
+label.f { display:block; font-size:13px; color:var(--muted); margin:12px 0 5px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:640px){ .grid2 { grid-template-columns:1fr; } }
+
+/* ===== Карточки кухонь (как направления на других платформах) ===== */
+.tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(175px, 1fr)); gap:18px; }
+.tile { min-height:190px; padding:18px 14px; border:1px solid var(--line); border-radius:18px; cursor:pointer; text-align:center;
+  background: radial-gradient(circle at 50% 10%, var(--glow), transparent 42%), linear-gradient(145deg, var(--card1), var(--card2));
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18); transition:transform .25s, box-shadow .25s; }
+.tile:hover { transform:translateY(-4px); box-shadow:0 14px 35px rgba(0,0,0,.25), 0 0 22px rgba(240,200,120,.12); }
+.tile .ic { font-size:46px; }
+.tile h3 { margin:0; font-size:19px; }
+
+/* ===== Карточки рецептов ===== */
+.recipes { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:18px; }
+.rcard { border:1px solid var(--line); border-radius:18px; overflow:hidden; cursor:pointer; position:relative;
+  background:linear-gradient(145deg, var(--card1), var(--card2)); box-shadow:0 10px 30px rgba(0,0,0,.18); transition:transform .2s; }
+.rcard:hover { transform:translateY(-3px); }
+.rcard .ph { aspect-ratio:4/3; background:rgba(0,0,0,.18) center/cover no-repeat; display:flex; align-items:center; justify-content:center; font-size:46px; }
+.rcard .body { padding:13px 15px 15px; }
+.rcard .title { font-family:"PT Serif", Georgia, serif; color:var(--gold); font-size:18px; margin-bottom:6px; }
+.meta { display:flex; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--muted); }
+.heart { position:absolute; top:10px; right:10px; width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:rgba(0,0,0,.35); cursor:pointer; font-size:18px; line-height:36px; }
+.empty { text-align:center; padding:40px 16px; color:var(--muted); }
+.search { max-width:380px; margin-bottom:18px; }
+
+/* ===== Рецепт ===== */
+.recipe { position:relative; user-select:none; -webkit-user-select:none; }
+.recipe .cover { width:100%; max-height:420px; object-fit:cover; border-radius:16px; display:block; margin-bottom:16px; border:1px solid var(--line-soft); }
+.recipe-grid { display:grid; grid-template-columns:340px 1fr; gap:22px; align-items:start; }
+@media (max-width:1000px){ .recipe-grid { grid-template-columns:1fr; } }
+.portions { display:flex; align-items:center; gap:10px; margin:6px 0 12px; }
+.portions button { width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--input); color:var(--gold); cursor:pointer; font-size:20px; }
+.portions b { min-width:28px; text-align:center; font-size:18px; color:var(--gold); }
+.ing { list-style:none; padding:0; margin:0; }
+.ing li { display:flex; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line-soft); }
+.kbju { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px; }
+.kbju div { background:var(--input); border:1px solid var(--line-soft); border-radius:12px; padding:8px 4px; text-align:center; }
+.kbju b { display:block; font-size:18px; color:var(--gold); font-family:"PT Serif", Georgia, serif; }
+.kbju span { font-size:12px; color:var(--muted); }
+.steps { counter-reset:s; padding:0; list-style:none; }
+.steps li { counter-increment:s; position:relative; padding:5px 0 15px 48px; line-height:1.5; }
+.steps li::before { content:counter(s); position:absolute; left:0; top:0; width:34px; height:34px; border-radius:50%; border:1px solid var(--gold2);
+  background:linear-gradient(90deg, var(--btn1), var(--btn2)); color:var(--gold); display:flex; align-items:center; justify-content:center; }
+.video { position:relative; padding-top:56.25%; border-radius:14px; overflow:hidden; margin:0 0 16px; background:#000; border:1px solid var(--line-soft); }
+.video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.source { margin-top:16px; padding:12px 14px; border-left:3px solid var(--gold2); background:var(--input); border-radius:10px; font-size:14px; }
+.watermark { position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:5; background-repeat:repeat; opacity:.06; }
+
+/* ===== Калькуляторы и таблицы ===== */
+.calc { max-width:620px; }
+.result { margin-top:18px; padding:18px; border-radius:14px; background:var(--input); border:1px solid var(--line-soft); }
+.result .big { font-size:40px; color:var(--gold); font-family:"PT Serif", Georgia, serif; }
+.scale { display:flex; height:10px; border-radius:6px; overflow:hidden; margin:12px 0 4px; }
+.scale span { flex:1; }
+.kb-row { display:grid; grid-template-columns:1fr 110px 44px; gap:8px; margin-bottom:8px; }
+table.list { width:100%; border-collapse:collapse; font-size:14px; }
+table.list th, table.list td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line-soft); vertical-align:middle; }
+table.list th { color:var(--gold2); font-weight:normal; font-size:13px; }
+.table-wrap { overflow-x:auto; }
+.badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line-soft); }
+.badge.ok { background:rgba(80,190,120,.18); color:#a8f0bf; border-color:rgba(120,220,150,.5); }
+.badge.no { background:rgba(220,90,90,.15); color:#ffb4b4; border-color:rgba(240,130,130,.45); }
+.code { font-family:ui-monospace, Menlo, monospace; font-size:24px; letter-spacing:3px; color:var(--gold); border:1px solid var(--line); background:var(--input); padding:8px 16px; border-radius:10px; display:inline-block; }
+.subtabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.chip { border:1px solid var(--line-soft); background:var(--input); color:var(--text); padding:8px 15px; border-radius:999px; cursor:pointer; font-size:14px; }
+.chip.on { border-color:var(--gold2); color:var(--gold); background:linear-gradient(90deg, var(--active1), var(--active2)); }
+.ing-edit { display:grid; grid-template-columns:2fr 90px 1fr 1fr 40px; gap:6px; margin-bottom:6px; }
+@media (max-width:640px){ .ing-edit { grid-template-columns:1fr 80px 40px; } .ing-edit .lab { grid-column:1 / -1; } }
+
+/* ===== Вход ===== */
+.auth { flex:1; display:flex; align-items:center; justify-content:center; padding:30px 16px; }
+.auth-card { width:440px; max-width:100%; padding:36px; text-align:center; border:1px solid var(--line); border-radius:20px;
+  background: radial-gradient(circle at 50% 0%, var(--glow), transparent 45%), linear-gradient(145deg, var(--card1), var(--card2));
+  box-shadow:0 20px 70px rgba(0,0,0,.4); }
+.auth-card.wide { width:600px; }
+.auth-card .logo { margin-bottom:18px; }
+.auth-card h2 { margin:6px 0 16px; }
+.auth-card input { margin:6px 0; padding:14px; font-size:16px; }
+.auth-card .lang-switch { width:max-content; margin:0 auto 16px; }
+.auth-card .btn { width:100%; padding:14px; font-size:16px; margin-top:10px; }
+.auth-card .btn.outline { background:transparent; }
+.auth-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; text-align:left; }
+@media (max-width:560px){ .auth-grid { grid-template-columns:1fr; } }
+.auth-card .f { text-align:left; }
+.msg { margin-top:12px; font-size:14px; min-height:1em; }
+.msg.err { color:#ffadad; } .msg.ok { color:#a8f0bf; }
+.linkbtn { background:none; border:0; color:var(--muted); cursor:pointer; padding:8px 0; font-size:15px; }
+.divider { color:var(--muted); margin:8px 0 2px; font-size:14px; }
+
+footer.foot { text-align:center; padding:16px; font-size:14px; color:var(--muted); }
+footer.foot b { color:var(--gold); font-family:"PT Serif", Georgia, serif; font-weight:normal; font-size:16px; }
+.toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#111; color:#fff; border:1px solid var(--gold2); padding:10px 16px; border-radius:12px; z-index:100; font-size:14px; }
+
+/* ===== Телефон ===== */
+@media (max-width:860px) {
+  .platform { display:block; padding:6px; }
+  .sidebar { width:100%; border-radius:16px 16px 0 0; padding:12px 14px; }
+  .side-head { display:flex; align-items:center; gap:10px; }
+  .logo { display:flex; align-items:center; gap:12px; text-align:left; margin:0; }
+  .logo-symbol { width:52px; height:52px; font-size:26px; margin:0; }
+  .logo-title { font-size:17px; } .logo-subtitle { font-size:14px; margin-top:2px; }
+  .burger { display:flex; margin-left:auto; width:46px; height:46px; border-radius:12px; border:1px solid var(--line); background:var(--input); color:var(--gold); font-size:22px; align-items:center; justify-content:center; cursor:pointer; }
+  .nav { display:none; margin-top:12px; }
+  .sidebar.open .nav { display:flex; }
+  .sidebar-bottom { display:none; }
+  .sidebar.open .sidebar-bottom { display:block; }
+  .main { border-left:1px solid var(--line); border-top:none; border-radius:0 0 16px 16px; padding:22px 14px 22px; }
+  .topbar h1 { font-size:27px; }
+  .tiles { grid-template-columns:1fr 1fr; gap:12px; }
+  .tile { min-height:150px; } .tile .ic { font-size:38px; } .tile h3 { font-size:16px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* =========================================================
+   НАСТРОЙКИ ПЛАТФОРМЫ — меняются здесь
+   ========================================================= */
+const CONFIG = {
+  name: { ru: "Вкусная академия", kz: "Вкусная академия" },
+  logoTitle: { ru: "Вкусная", kz: "Вкусная" },
+  logoSubtitle: { ru: "академия", kz: "академия" },
+  logoSymbol: "🍲",
+  site: "",   // адрес сайта, когда будет готов, например "dastarkhan.kz"
+  supabaseUrl: "https://shoaqhkkbnpppunpfknt.supabase.co",
+  supabaseKey: "sb_publishable_7lXOeWjzBULFY8QYoA9YsQ_ong81xmm",
+  mediaBucket: "kitchen-media"
+};
+
+const sb = supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+
+/* ===== Тексты интерфейса на двух языках ===== */
+const I18N = {
+  ru: {
+    login:"Вход", register:"Регистрация", email:"Email", password:"Пароль", password2:"Повторите пароль",
+    enter:"Войти", noAccount:"Нет аккаунта? Зарегистрироваться", haveAccount:"← Вернуться ко входу",
+    forgot:"Забыли пароль?", sendLink:"Отправить ссылку", resetTitle:"Восстановление пароля",
+    lastName:"Фамилия", firstName:"Имя", phone:"Телефон", teacherCodeOpt:"Код учителя (если есть)",
+    createAcc:"Создать аккаунт", logout:"Выйти",
+    tabCuisines:"Кухни мира", tabPP:"ПП-рецепты", tabVeg:"Вегетарианские", tabServing:"Сервировка",
+    tabFav:"Избранное", tabBMI:"ИМТ", tabKBJU:"КБЖУ", tabAccess:"Доступ", tabStudents:"Мои ученики", tabAdmin:"Админ",
+    noAccessTitle:"Доступ пока закрыт", noAccessText:"Чтобы открыть рецепты, перейдите в раздел «Доступ».",
+    goAccess:"Перейти в «Доступ»", noRecipes:"Рецептов в этом разделе пока нет.", noFav:"В избранном пока пусто. Нажмите ♡ на рецепте, чтобы сохранить его.",
+    min:"мин", kcal:"ккал", perPortion:"на порцию", portions:"Порций", ingredients:"Ингредиенты", steps:"Приготовление",
+    total:"всего", protein:"Белки", fat:"Жиры", carbs:"Углеводы", calories:"Калории", source:"Источник рецепта",
+    back:"← Назад", g:"г", toTaste:"по вкусу",
+    bmiTitle:"Индекс массы тела (ИМТ)", bmiHint:"Для взрослых от 18 лет. Расчёт по формуле ВОЗ: вес (кг) ÷ рост (м)².",
+    height:"Рост, см", weight:"Вес, кг", calc:"Рассчитать",
+    bmi1:"Недостаточная масса тела", bmi2:"Норма", bmi3:"Избыточная масса тела", bmi4:"Ожирение",
+    bmiNote:"ИМТ — ориентир, а не диагноз. Для оценки здоровья обратитесь к врачу.",
+    kbjuTitle:"Калькулятор КБЖУ", kbjuHint:"Выберите продукты и укажите вес в сыром виде. Калории и БЖУ посчитаются автоматически.",
+    product:"Продукт", grams:"Граммы", addRow:"+ Добавить продукт", choose:"— выберите —", sum:"Итого",
+    accessTitle:"Доступ", yourStatus:"Ваш доступ", active:"Открыт", inactive:"Закрыт", until:"до", unlimited:"бессрочно",
+    roleStudent:"Ученик", roleTeacher:"Учитель", roleAdmin:"Администратор", yourRole:"Ваш тариф",
+    yourCode:"Ваш код учителя", codeHint:"Передайте этот код ученикам — при регистрации они вводят его и попадают в ваш список.",
+    enterCode:"Код вашего учителя", attach:"Привязать", teacherLinked:"Вы привязаны к учителю", codeNotFound:"Учитель с таким кодом не найден.",
+    accessHow:"Доступ открывает администратор или ваш учитель после оплаты. Если вы уже оплатили — напишите им.",
+    users:"Пользователи", name:"Имя", role:"Тариф", access:"Доступ", actions:"Действия", give:"Открыть", close:"Закрыть",
+    untilDate:"До даты", forever:"Бессрочно", saved:"Сохранено", error:"Ошибка", noStudents:"Пока нет учеников.",
+    recipesAdm:"Рецепты", servingAdm:"Сервировка", productsAdm:"Продукты", sectionsAdm:"Разделы",
+    newRecipe:"+ Новый рецепт", edit:"Изменить", del:"Удалить", save:"Сохранить", cancel:"Отмена",
+    section:"Раздел", titleRu:"Название (рус)", titleKz:"Название (қаз)", introRu:"Описание (рус)", introKz:"Описание (қаз)",
+    stepsRu:"Шаги (рус) — каждый шаг с новой строки", stepsKz:"Шаги (қаз) — каждый шаг с новой строки",
+    servings:"На сколько порций", time:"Время, мин", photo:"Фото", photoUrl:"или ссылка на фото", video:"Ссылка на видео (YouTube / Vimeo)",
+    sourceRu:"Источник (рус): у кого взят рецепт", sourceKz:"Источник (қаз)", published:"Опубликован (виден ученикам)",
+    ingEdit:"Ингредиенты (вес в сыром виде)", labelRu:"Подпись рус (напр. «по вкусу»)", labelKz:"Подпись қаз",
+    draft:"черновик", confirmDel:"Удалить безвозвратно?", newServing:"+ Новая статья", bodyRu:"Текст (рус)", bodyKz:"Текст (қаз)",
+    newProduct:"+ Продукт", per100:"на 100 г в сыром виде", newSection:"+ Раздел", kind:"Тип",
+    kindCuisine:"Кухня мира", kindPP:"ПП", kindVeg:"Вегетарианское", nameRu:"Название (рус)", nameKz:"Название (қаз)",
+    noServing:"Статей о сервировке пока нет.", loading:"Загрузка…", search:"Поиск рецепта…",
+    checkEmail:"Аккаунт создан. Подтвердите email по ссылке в письме и войдите.", regOk:"Регистрация завершена.",
+    fillAll:"Заполните все поля.", pwShort:"Пароль — минимум 6 символов.", pwMismatch:"Пароли не совпадают.",
+    badPhone:"Телефон в формате +77001234567.", wrongLogin:"Неверный email или пароль.", linkSent:"Ссылка отправлена на почту.",
+    footer:"Все права защищены", notMember:"Вы не зарегистрированы.", loginTitle:"Вход в платформу", or:"или", registerBtn:"Зарегистрироваться"
+  },
+  kz: {
+    login:"Кіру", register:"Тіркелу", email:"Email", password:"Құпиясөз", password2:"Құпиясөзді қайталаңыз",
+    enter:"Кіру", noAccount:"Аккаунт жоқ па? Тіркелу", haveAccount:"← Кіруге оралу",
+    forgot:"Құпиясөзді ұмыттыңыз ба?", sendLink:"Сілтеме жіберу", resetTitle:"Құпиясөзді қалпына келтіру",
+    lastName:"Тегі", firstName:"Аты", phone:"Телефон", teacherCodeOpt:"Ұстаз коды (бар болса)",
+    createAcc:"Аккаунт ашу", logout:"Шығу",
+    tabCuisines:"Әлем асханасы", tabPP:"ПП-рецепттер", tabVeg:"Вегетариандық", tabServing:"Дастарқан безендіру",
+    tabFav:"Таңдаулылар", tabBMI:"ДСИ", tabKBJU:"КАМК", tabAccess:"Қолжетімділік", tabStudents:"Шәкірттерім", tabAdmin:"Әкімші",
+    noAccessTitle:"Қолжетімділік әзірге жабық", noAccessText:"Рецепттерді ашу үшін «Қолжетімділік» бөліміне өтіңіз.",
+    goAccess:"«Қолжетімділік» бөліміне өту", noRecipes:"Бұл бөлімде әзірге рецепт жоқ.", noFav:"Таңдаулылар бос. Сақтау үшін рецепттегі ♡ белгісін басыңыз.",
+    min:"мин", kcal:"ккал", perPortion:"бір порцияға", portions:"Порция", ingredients:"Құрамы", steps:"Дайындау",
+    total:"барлығы", protein:"Ақуыз", fat:"Май", carbs:"Көмірсу", calories:"Калория", source:"Рецепт дереккөзі",
+    back:"← Артқа", g:"г", toTaste:"талғам бойынша",
+    bmiTitle:"Дене салмағының индексі (ДСИ)", bmiHint:"18 жастан асқан ересектерге. ДДҰ формуласы: салмақ (кг) ÷ бой (м)².",
+    height:"Бойы, см", weight:"Салмағы, кг", calc:"Есептеу",
+    bmi1:"Салмақ жетіспеушілігі", bmi2:"Қалыпты", bmi3:"Артық салмақ", bmi4:"Семіздік",
+    bmiNote:"ДСИ — бағдар ғана, диагноз емес. Денсаулық туралы дәрігерге жүгініңіз.",
+    kbjuTitle:"КАМК калькуляторы", kbjuHint:"Өнімдерді таңдап, шикі күйіндегі салмағын жазыңыз. Калория мен АМК автоматты есептеледі.",
+    product:"Өнім", grams:"Грамм", addRow:"+ Өнім қосу", choose:"— таңдаңыз —", sum:"Барлығы",
+    accessTitle:"Қолжетімділік", yourStatus:"Сіздің қолжетімділігіңіз", active:"Ашық", inactive:"Жабық", until:"дейін", unlimited:"мерзімсіз",
+    roleStudent:"Шәкірт", roleTeacher:"Ұстаз", roleAdmin:"Әкімші", yourRole:"Сіздің тарифіңіз",
+    yourCode:"Сіздің ұстаз кодыңыз", codeHint:"Бұл кодты шәкірттеріңізге беріңіз — тіркелгенде оны енгізіп, сіздің тізіміңізге түседі.",
+    enterCode:"Ұстазыңыздың коды", attach:"Байланыстыру", teacherLinked:"Сіз ұстазға байланыстырылдыңыз", codeNotFound:"Мұндай кодпен ұстаз табылмады.",
+    accessHow:"Төлемнен кейін қолжетімділікті әкімші немесе ұстазыңыз ашады. Төлеген болсаңыз — оларға жазыңыз.",
+    users:"Пайдаланушылар", name:"Аты-жөні", role:"Тариф", access:"Қолжетімділік", actions:"Әрекет", give:"Ашу", close:"Жабу",
+    untilDate:"Күнге дейін", forever:"Мерзімсіз", saved:"Сақталды", error:"Қате", noStudents:"Әзірге шәкірт жоқ.",
+    recipesAdm:"Рецепттер", servingAdm:"Безендіру", productsAdm:"Өнімдер", sectionsAdm:"Бөлімдер",
+    newRecipe:"+ Жаңа рецепт", edit:"Өзгерту", del:"Жою", save:"Сақтау", cancel:"Болдырмау",
+    section:"Бөлім", titleRu:"Атауы (орыс)", titleKz:"Атауы (қаз)", introRu:"Сипаттама (орыс)", introKz:"Сипаттама (қаз)",
+    stepsRu:"Қадамдар (орыс) — әр қадам жаңа жолдан", stepsKz:"Қадамдар (қаз) — әр қадам жаңа жолдан",
+    servings:"Неше порцияға", time:"Уақыты, мин", photo:"Сурет", photoUrl:"немесе суреттің сілтемесі", video:"Бейне сілтемесі (YouTube / Vimeo)",
+    sourceRu:"Дереккөз (орыс): рецепт кімнен алынды", sourceKz:"Дереккөз (қаз)", published:"Жарияланған (шәкірттерге көрінеді)",
+    ingEdit:"Құрамы (шикі күйіндегі салмақ)", labelRu:"Жазба орыс (мыс. «по вкусу»)", labelKz:"Жазба қаз",
+    draft:"жоба", confirmDel:"Біржола жою керек пе?", newServing:"+ Жаңа мақала", bodyRu:"Мәтін (орыс)", bodyKz:"Мәтін (қаз)",
+    newProduct:"+ Өнім", per100:"шикі күйінде 100 г-ға", newSection:"+ Бөлім", kind:"Түрі",
+    kindCuisine:"Әлем асханасы", kindPP:"ПП", kindVeg:"Вегетариандық", nameRu:"Атауы (орыс)", nameKz:"Атауы (қаз)",
+    noServing:"Дастарқан безендіру туралы мақала әзірге жоқ.", loading:"Жүктелуде…", search:"Рецепт іздеу…",
+    checkEmail:"Аккаунт ашылды. Хаттағы сілтеме арқылы email-ді растап, кіріңіз.", regOk:"Тіркелу аяқталды.",
+    fillAll:"Барлық жолды толтырыңыз.", pwShort:"Құпиясөз кемінде 6 таңба.", pwMismatch:"Құпиясөздер сәйкес емес.",
+    badPhone:"Телефон +77001234567 форматында.", wrongLogin:"Email немесе құпиясөз қате.", linkSent:"Сілтеме поштаға жіберілді.",
+    footer:"Барлық құқықтар қорғалған", notMember:"Сіз тіркелмегенсіз.", loginTitle:"Платформаға кіру", or:"немесе", registerBtn:"Тіркелу"
+  }
+};
+
+/* ===== Состояние ===== */
+const S = {
+  lang: (() => { try { return localStorage.getItem("kitchen_lang") || "ru"; } catch(e){ return "ru"; } })(),
+  user:null, profile:null, member:null, isAdmin:false, hasAccess:false,
+  tab:"cuisines", sections:[], products:[], favs:new Set(), recipesCache:{},
+  sectionId:null, openRecipe:null, portions:4, search:""
+};
+const t = k => (I18N[S.lang] && I18N[S.lang][k]) || I18N.ru[k] || k;
+const L = (obj, base) => { const kz = obj[base + "_kz"], ru = obj[base + "_ru"]; return S.lang === "kz" ? (kz || ru || "") : (ru || kz || ""); };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id => document.getElementById(id);
+const fmt = (n, d=0) => (Math.round(n * Math.pow(10,d)) / Math.pow(10,d)).toLocaleString("ru-RU");
+function toast(msg){ const el = $("toast"); el.textContent = msg; el.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add("hidden"), 2200); }
+
+/* ===== Язык и цвет — переключаются мгновенно ===== */
+function setLang(l){
+  S.lang = l;
+  try { localStorage.setItem("kitchen_lang", l); } catch(e){}
+  document.documentElement.dataset.lang = l;
+  document.documentElement.lang = l === "kz" ? "kk" : "ru";
+  document.title = CONFIG.name[l];
+  rerender();
+}
+function langSwitch(){
+  return `<div class="lang-switch">
+    <button class="${S.lang==='kz'?'on':''}" onclick="setLang('kz')">Қазақша</button>
+    <button class="${S.lang==='ru'?'on':''}" onclick="setLang('ru')">Русский</button></div>`;
+}
+let rerender = () => {};
+
+function logoHtml(){
+  return `<div class="logo"><div class="logo-symbol">${CONFIG.logoSymbol}</div><div><div class="logo-title">${esc(CONFIG.logoTitle[S.lang])}</div><div class="logo-subtitle">${esc(CONFIG.logoSubtitle[S.lang])}</div></div></div>`;
+}
+function footerHtml(){
+  const site = CONFIG.site ? ` · <a href="https://${esc(CONFIG.site)}" target="_blank" rel="noopener">${esc(CONFIG.site)}</a>` : "";
+  return `<footer class="foot"><b>${esc(CONFIG.name[S.lang])}</b>${site}<br>© ${new Date().getFullYear()} · ${t("footer")}</footer>`;
+}
+
+/* =========================================================
+   ВХОД / РЕГИСТРАЦИЯ
+   ========================================================= */
+let authView = "login";
+function renderAuth(){
+  rerender = renderAuth;
+  let inner = "", wide = false;
+  if (authView === "login") inner = `
+    <h2>${t("loginTitle")}</h2>
+    <input id="lEmail" type="email" placeholder="${t("email")}" autocomplete="email">
+    <input id="lPass" type="password" placeholder="${t("password")}" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" onclick="doLogin()">${t("enter")}</button>
+    <button class="linkbtn" onclick="authView='reset';renderAuth()">${t("forgot")}</button>
+    <div class="divider">${t("or")}</div>
+    <button class="btn outline" onclick="authView='register';renderAuth()">${t("registerBtn")}</button>
+    <div class="msg" id="aMsg"></div>`;
+  else if (authView === "register") { wide = true; inner = `
+    <h2>${t("register")}</h2>
+    <div class="auth-grid"><input id="rLast" placeholder="${t("lastName")}"><input id="rFirst" placeholder="${t("firstName")}">
+    <input id="rPhone" type="tel" placeholder="${t("phone")}: +77001234567" oninput="this.value=this.value.replace(/[^\\d+]/g,'')"><input id="rEmail" type="email" placeholder="${t("email")}" autocomplete="email">
+    <input id="rPass" type="password" placeholder="${t("password")}" autocomplete="new-password"><input id="rPass2" type="password" placeholder="${t("password2")}" autocomplete="new-password"></div>
+    <input id="rCode" style="text-transform:uppercase" maxlength="8" placeholder="${t("teacherCodeOpt")}">
+    <button class="btn" onclick="doRegister()">${t("createAcc")}</button>
+    <div class="msg" id="aMsg"></div>
+    <button class="linkbtn" onclick="authView='login';renderAuth()">${t("haveAccount")}</button>`; }
+  else inner = `
+    <h2>${t("resetTitle")}</h2>
+    <input id="pEmail" type="email" placeholder="${t("email")}">
+    <button class="btn" onclick="doReset()">${t("sendLink")}</button>
+    <div class="msg" id="aMsg"></div>
+    <button class="linkbtn" onclick="authView='login';renderAuth()">${t("haveAccount")}</button>`;
+  $("app").innerHTML = `<div class="auth"><div class="auth-card ${wide ? "wide" : ""}">
+    <div class="logo" style="display:block"><div class="logo-symbol">${CONFIG.logoSymbol}</div><div class="logo-title">${esc(CONFIG.logoTitle[S.lang])}</div><div class="logo-subtitle">${esc(CONFIG.logoSubtitle[S.lang])}</div></div>
+    ${langSwitch()}${inner}</div></div>${footerHtml()}`;
+}
+function aMsg(text, ok){ const m = $("aMsg"); if (m){ m.textContent = text; m.className = "msg " + (ok ? "ok" : "err"); } }
+
+async function doLogin(){
+  const email = $("lEmail").value.trim().toLowerCase(), password = $("lPass").value;
+  if (!email || !password) return aMsg(t("fillAll"));
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return aMsg(t("wrongLogin"));
+  await boot();
+}
+async function doRegister(){
+  const last = $("rLast").value.trim(), first = $("rFirst").value.trim(), phone = $("rPhone").value.trim();
+  const email = $("rEmail").value.trim().toLowerCase(), p1 = $("rPass").value, p2 = $("rPass2").value;
+  const code = $("rCode").value.trim().toUpperCase();
+  if (!last || !first || !phone || !email || !p1) return aMsg(t("fillAll"));
+  if (!/^\+\d{8,15}$/.test(phone)) return aMsg(t("badPhone"));
+  if (p1.length < 6) return aMsg(t("pwShort"));
+  if (p1 !== p2) return aMsg(t("pwMismatch"));
+  try { if (code) localStorage.setItem("kitchen_pending_code", code); } catch(e){}
+  const { data, error } = await sb.auth.signUp({ email, password:p1, options:{
+    data:{ first_name:first, last_name:last, phone, platform:"kitchen" },
+    emailRedirectTo: location.origin + location.pathname } });
+  if (error) return aMsg(error.message);
+  if (data.session) { aMsg(t("regOk"), true); await boot(); }
+  else aMsg(t("checkEmail"), true);
+}
+async function doReset(){
+  const email = $("pEmail").value.trim().toLowerCase();
+  if (!email) return aMsg(t("fillAll"));
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if (error) return aMsg(error.message);
+  aMsg(t("linkSent"), true);
+}
+async function doLogout(){ await sb.auth.signOut(); S.user = null; authView = "login"; renderAuth(); }
+
+/* =========================================================
+   ЗАГРУЗКА ДАННЫХ
+   ========================================================= */
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) return renderAuth();
+  S.user = session.user;
+  let code = null; try { code = localStorage.getItem("kitchen_pending_code"); } catch(e){}
+  const j = await sb.rpc("kitchen_join", { p_code: code || null });
+  if (j.data === "not_member") {
+    await sb.auth.signOut(); S.user = null; authView = "login"; renderAuth(); aMsg(t("notMember")); return;
+  }
+  if (code && j.data !== "not_authenticated") { try { localStorage.removeItem("kitchen_pending_code"); } catch(e){} }
+  const [prof, mem, adm, acc, secs, favs] = await Promise.all([
+    sb.from("profiles").select("first_name,last_name,phone,email").eq("id", S.user.id).maybeSingle(),
+    sb.from("kitchen_members").select("*").eq("profile_id", S.user.id).maybeSingle(),
+    sb.rpc("kitchen_is_admin"), sb.rpc("kitchen_has_access"),
+    sb.from("kitchen_sections").select("*").eq("is_active", true).order("sort_order"),
+    sb.from("kitchen_favorites").select("recipe_id").eq("user_id", S.user.id)
+  ]);
+  S.profile = prof.data || {}; S.member = mem.data || { kitchen_role:"student" };
+  S.isAdmin = !!adm.data; S.hasAccess = !!acc.data;
+  S.sections = secs.data || []; S.favs = new Set((favs.data || []).map(f => f.recipe_id));
+  if (S.hasAccess) { const p = await sb.from("kitchen_products").select("*").eq("is_active", true).order("name_ru"); S.products = p.data || []; }
+  renderApp();
+}
+
+const TAB_ICONS = { cuisines:"🌍", pp:"🥗", veg:"🥦", serving:"🍽", fav:"❤️", bmi:"⚖️", kbju:"🔢", access:"🔑", students:"👥", admin:"⚙️" };
+function tabsList(){
+  const list = [["cuisines","tabCuisines"],["pp","tabPP"],["veg","tabVeg"],["serving","tabServing"],null,["fav","tabFav"],["bmi","tabBMI"],["kbju","tabKBJU"],null,["access","tabAccess"]];
+  if (S.member?.kitchen_role === "teacher") list.push(["students","tabStudents"]);
+  if (S.isAdmin) list.push(["admin","tabAdmin"]);
+  return list;
+}
+function go(tab){ S.tab = tab; S.openRecipe = null; S.sectionId = null; S.search = ""; renderApp(); window.scrollTo(0,0); }
+function tabTitle(){ const f = tabsList().find(x => x && x[0] === S.tab); return f ? t(f[1]) : ""; }
+
+function renderApp(){
+  rerender = renderApp;
+  $("app").innerHTML = `
+  <div class="platform">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-head">${logoHtml()}
+        <button class="burger" onclick="$('sidebar').classList.toggle('open')">☰</button></div>
+      <div class="nav">${tabsList().map(x => x ? `<button class="nav-item ${S.tab===x[0]?'active':''}" onclick="go('${x[0]}')"><span class="nav-icon">${TAB_ICONS[x[0]]}</span> ${t(x[1])}</button>` : `<div class="nav-sep"></div>`).join("")}
+        <button class="nav-item logout" onclick="doLogout()"><span class="nav-icon">🚪</span> ${t("logout")}</button></div>
+    </aside>
+    <section class="main">
+      <div class="topbar"><h1 id="pageTitle">${esc(tabTitle())}</h1><div class="account">${langSwitch()}</div></div>
+      <div id="main"><div class="empty">${t("loading")}</div></div>
+      ${footerHtml()}
+    </section>
+  </div>`;
+  renderMain();
+}
+function setTitle(txt){ const h = $("pageTitle"); if (h) h.textContent = txt; }
+
+async function renderMain(){
+  const m = $("main"); if (!m) return;
+  const tab = S.tab;
+  if (["cuisines","pp","veg"].includes(tab)) {
+    if (!S.hasAccess) return m.innerHTML = noAccessHtml();
+    if (S.openRecipe) return renderRecipe(m);
+    return renderSection(m, tab === "cuisines" ? "cuisine" : tab);
+  }
+  if (tab === "serving") return S.hasAccess ? renderServing(m) : (m.innerHTML = noAccessHtml());
+  if (tab === "fav") { if (!S.hasAccess) return m.innerHTML = noAccessHtml(); return S.openRecipe ? renderRecipe(m) : renderFav(m); }
+  if (tab === "bmi") return renderBMI(m);
+  if (tab === "kbju") return S.hasAccess ? renderKBJU(m) : (m.innerHTML = noAccessHtml());
+  if (tab === "access") return renderAccess(m);
+  if (tab === "students") return renderUsers(m, false);
+  if (tab === "admin") return renderAdmin(m);
+}
+function noAccessHtml(){
+  return `<div class="card empty"><div style="font-size:46px">🔒</div><h2>${t("noAccessTitle")}</h2><p>${t("noAccessText")}</p>
+  <button class="btn" onclick="go('access')">${t("goAccess")}</button></div>`;
+}
+
+/* =========================================================
+   РЕЦЕПТЫ
+   ========================================================= */
+async function loadRecipes(filter){
+  let q = sb.from("kitchen_recipes").select("*, kitchen_recipe_ingredients(grams, product_id)").order("sort_order").order("created_at", { ascending:false });
+  if (!S.isAdmin) q = q.eq("is_published", true);
+  if (filter.sectionIds) q = q.in("section_id", filter.sectionIds);
+  if (filter.ids) q = q.in("id", filter.ids);
+  const { data } = await q; return data || [];
+}
+function productMap(){ const m = {}; S.products.forEach(p => m[p.id] = p); return m; }
+function kcalPerPortion(r){
+  const pm = productMap(); let k = 0;
+  (r.kitchen_recipe_ingredients || []).forEach(i => { const p = pm[i.product_id]; if (p && i.grams) k += p.kcal * i.grams / 100; });
+  return k / (r.servings || 1);
+}
+function recipeCards(list){
+  if (!list.length) return `<div class="empty">${t("noRecipes")}</div>`;
+  const q = S.search.trim().toLowerCase();
+  const shown = q ? list.filter(r => (r.title_ru + " " + r.title_kz).toLowerCase().includes(q)) : list;
+  if (!shown.length) return `<div class="empty">${t("noRecipes")}</div>`;
+  return `<div class="recipes">${shown.map(r => {
+    S.recipesCache[r.id] = r;
+    const k = kcalPerPortion(r);
+    return `<div class="rcard" onclick="openRecipe('${r.id}')">
+      <div class="ph" style="${r.photo_url ? `background-image:url('${esc(r.photo_url)}')` : ""}">${r.photo_url ? "" : "🍲"}</div>
+      <button class="heart" onclick="event.stopPropagation();toggleFav('${r.id}')">${S.favs.has(r.id) ? "❤️" : "🤍"}</button>
+      <div class="body"><div class="title">${esc(L(r,"title"))}${r.is_published ? "" : ` <span class="badge">${t("draft")}</span>`}</div>
+      <div class="meta">${r.time_min ? `<span>⏱ ${r.time_min} ${t("min")}</span>` : ""}${k ? `<span>🔥 ${fmt(k)} ${t("kcal")}</span>` : ""}</div></div></div>`;
+  }).join("")}</div>`;
+}
+const CUISINE_ICONS = ["🥟","🍚","🥞","🥢","🧀","🥙","🍝","🍣","🥡","🥐","🍲","🍛","🌮","🥘"];
+async function renderSection(m, kind){
+  const secs = S.sections.filter(s => s.kind === kind);
+  if (kind === "cuisine" && !S.sectionId) {
+    setTitle(t("tabCuisines"));
+    m.innerHTML = secs.length ? `<div class="tiles">${secs.map((s,i) => `<div class="tile" onclick="S.sectionId='${s.id}';S.search='';renderMain()">
+      <div class="ic">${CUISINE_ICONS[i % CUISINE_ICONS.length]}</div><h3>${esc(L(s,"name"))}</h3></div>`).join("")}</div>` : `<div class="empty">${t("noRecipes")}</div>`;
+    return;
+  }
+  const ids = kind === "cuisine" ? [S.sectionId] : secs.map(s => s.id);
+  if (kind === "cuisine") setTitle(secName(S.sectionId));
+  m.innerHTML = `
+    ${kind === "cuisine" ? `<button class="btn ghost small" style="margin-bottom:16px" onclick="S.sectionId=null;renderMain()">${t("back")}</button>` : ""}
+    <input class="search" placeholder="${t("search")}" value="${esc(S.search)}" oninput="S.search=this.value;renderListOnly()">
+    <div id="list"><div class="empty">${t("loading")}</div></div>`;
+  S._list = ids.length ? await loadRecipes({ sectionIds: ids }) : [];
+  renderListOnly();
+}
+function renderListOnly(){ const el = $("list"); if (el) el.innerHTML = recipeCards(S._list || []); }
+
+async function toggleFav(id){
+  if (S.favs.has(id)) { await sb.from("kitchen_favorites").delete().eq("user_id", S.user.id).eq("recipe_id", id); S.favs.delete(id); }
+  else { await sb.from("kitchen_favorites").insert({ user_id:S.user.id, recipe_id:id }); S.favs.add(id); }
+  if (S.tab === "fav" && !S.openRecipe) return renderMain();
+  if (S.openRecipe) return renderRecipe($("main"));
+  renderListOnly();
+}
+async function renderFav(m){
+  m.innerHTML = `<div id="list"><div class="empty">${t("loading")}</div></div>`;
+  S._list = S.favs.size ? await loadRecipes({ ids:[...S.favs] }) : [];
+  $("list").innerHTML = S._list.length ? recipeCards(S._list) : `<div class="empty">${t("noFav")}</div>`;
+}
+
+async function openRecipe(id){
+  const { data:r } = await sb.from("kitchen_recipes").select("*, kitchen_recipe_ingredients(*)").eq("id", id).maybeSingle();
+  if (!r) return;
+  r.kitchen_recipe_ingredients.sort((a,b) => a.sort_order - b.sort_order);
+  S.openRecipe = r; S.portions = r.servings || 4;
+  renderRecipe($("main")); window.scrollTo(0,0);
+}
+function videoEmbed(url){
+  if (!url) return "";
+  let m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/);
+  if (m) return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}" allowfullscreen allow="accelerometer; encrypted-media; picture-in-picture"></iframe></div>`;
+  m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (m) return `<div class="video"><iframe src="https://player.vimeo.com/video/${m[1]}" allowfullscreen allow="fullscreen; picture-in-picture"></iframe></div>`;
+  return "";
+}
+function applyWatermark(){
+  const label = [((S.profile.last_name||"") + " " + (S.profile.first_name||"")).trim(), S.profile.phone || S.user.email].filter(Boolean).join(" · ");
+  const safe = label.replace(/[<>&'"]/g,"");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="340" height="170"><text x="10" y="95" transform="rotate(-22 170 85)" font-family="Arial" font-size="15" fill="#fff">${safe}</text></svg>`;
+  document.querySelectorAll(".watermark").forEach(el => el.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`);
+}
+function renderRecipe(m){
+  const r = S.openRecipe, pm = productMap(), k = S.portions / (r.servings || 1);
+  let tot = { kcal:0, p:0, f:0, c:0 };
+  const ings = r.kitchen_recipe_ingredients.map(i => {
+    const p = pm[i.product_id];
+    if (p && i.grams) { tot.kcal += p.kcal*i.grams/100; tot.p += p.protein*i.grams/100; tot.f += p.fat*i.grams/100; tot.c += p.carbs*i.grams/100; }
+    const name = L(i,"label") && !p ? L(i,"label") : (p ? L(p,"name") : "");
+    const amount = i.grams ? `${fmt(i.grams * k)} ${t("g")}` : (p ? (L(i,"label") || t("toTaste")) : "");
+    const extra = p && L(i,"label") ? ` <span class="muted">(${esc(L(i,"label"))})</span>` : "";
+    return `<li><span>${esc(name)}${extra}</span><b>${esc(amount)}</b></li>`;
+  }).join("");
+  const per = n => fmt(n / (r.servings || 1), 1);
+  const steps = (L(r,"steps") || "").split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const back = S.tab === "fav" ? "fav" : S.tab;
+  m.innerHTML = `<div class="recipe" oncontextmenu="return false">
+    <div class="watermark"></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <button class="btn ghost small" onclick="S.openRecipe=null;renderMain()">${t("back")}</button>
+      <button class="btn ghost small" onclick="toggleFav('${r.id}')">${S.favs.has(r.id) ? "❤️" : "🤍"} ${t("tabFav")}</button></div>
+    ${r.photo_url ? `<img class="cover" src="${esc(r.photo_url)}" alt="" draggable="false">` : ""}
+    <h2 style="font-size:32px">${esc(L(r,"title"))}</h2>
+    <div class="meta" style="margin-bottom:10px">${r.time_min ? `<span>⏱ ${r.time_min} ${t("min")}</span>` : ""}${tot.kcal ? `<span>🔥 ${fmt(tot.kcal/(r.servings||1))} ${t("kcal")} ${t("perPortion")}</span>` : ""}</div>
+    ${L(r,"intro") ? `<p>${esc(L(r,"intro")).replace(/\n/g,"<br>")}</p>` : ""}
+    <div class="recipe-grid">
+      <div class="card"><h3>${t("ingredients")}</h3>
+        <div class="portions"><span>${t("portions")}:</span>
+          <button onclick="S.portions=Math.max(1,S.portions-1);renderRecipe($('main'))">−</button><b>${S.portions}</b>
+          <button onclick="S.portions=Math.min(50,S.portions+1);renderRecipe($('main'))">+</button></div>
+        <ul class="ing">${ings}</ul>
+        ${tot.kcal ? `<div class="muted" style="margin-top:12px;font-size:13px">${t("perPortion")}:</div>
+        <div class="kbju"><div><b>${fmt(tot.kcal/(r.servings||1))}</b><span>${t("kcal")}</span></div><div><b>${per(tot.p)}</b><span>${t("protein")}</span></div>
+        <div><b>${per(tot.f)}</b><span>${t("fat")}</span></div><div><b>${per(tot.c)}</b><span>${t("carbs")}</span></div></div>` : ""}
+      </div>
+      <div>${videoEmbed(r.video_url)}
+        ${steps.length ? `<h3>${t("steps")}</h3><ol class="steps">${steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
+        ${L(r,"source") ? `<div class="source"><b>${t("source")}:</b> ${esc(L(r,"source"))}</div>` : ""}
+      </div></div></div>`;
+  applyWatermark();
+}
+
+/* ===== Сервировка ===== */
+async function renderServing(m){
+  m.innerHTML = `<div id="list"><div class="empty">${t("loading")}</div></div>`;
+  let q = sb.from("kitchen_serving").select("*").order("sort_order");
+  if (!S.isAdmin) q = q.eq("is_published", true);
+  const { data } = await q;
+  $("list").innerHTML = (data && data.length) ? `<div class="recipe" oncontextmenu="return false"><div class="watermark"></div>${data.map(a => `
+    <div class="card" style="margin-bottom:16px">
+      ${a.photo_url ? `<img class="cover" src="${esc(a.photo_url)}" alt="" draggable="false">` : ""}
+      <h3>${esc(L(a,"title"))}${a.is_published ? "" : ` <span class="badge">${t("draft")}</span>`}</h3>
+      <div>${esc(L(a,"body")).replace(/\n/g,"<br>")}</div>
+      ${L(a,"source") ? `<div class="source"><b>${t("source")}:</b> ${esc(L(a,"source"))}</div>` : ""}</div>`).join("")}</div>`
+    : `<div class="empty">${t("noServing")}</div>`;
+  applyWatermark();
+}
+
+/* =========================================================
+   КАЛЬКУЛЯТОРЫ
+   ========================================================= */
+let bmiVals = { h:"", w:"" };
+function renderBMI(m){
+  m.innerHTML = `<div class="card calc"><h2>${t("bmiTitle")}</h2><p class="muted">${t("bmiHint")}</p>
+    <div class="grid2"><div><label class="f">${t("height")}</label><input id="bH" type="number" inputmode="decimal" value="${bmiVals.h}"></div>
+    <div><label class="f">${t("weight")}</label><input id="bW" type="number" inputmode="decimal" value="${bmiVals.w}"></div></div>
+    <div style="margin-top:14px"><button class="btn" onclick="calcBMI()">${t("calc")}</button></div><div id="bmiRes"></div></div>`;
+  if (bmiVals.h && bmiVals.w) calcBMI();
+}
+function calcBMI(){
+  const h = parseFloat($("bH").value), w = parseFloat($("bW").value);
+  bmiVals = { h:$("bH").value, w:$("bW").value };
+  if (!(h > 50 && h < 260 && w > 20 && w < 400)) return $("bmiRes").innerHTML = "";
+  const bmi = w / Math.pow(h/100, 2);
+  const [label, color] = bmi < 18.5 ? [t("bmi1"),"#4a90d9"] : bmi < 25 ? [t("bmi2"),"#2e9d57"] : bmi < 30 ? [t("bmi3"),"#e0a020"] : [t("bmi4"),"#c8372d"];
+  const lo = 18.5 * Math.pow(h/100,2), hi = 24.9 * Math.pow(h/100,2);
+  $("bmiRes").innerHTML = `<div class="result"><div class="big">${fmt(bmi,1)}</div><div style="font-weight:700;color:${color}">${label}</div>
+    <div class="scale"><span style="background:#4a90d9"></span><span style="background:#2e9d57"></span><span style="background:#e0a020"></span><span style="background:#c8372d"></span></div>
+    <div class="meta"><span>&lt;18,5</span><span>18,5–24,9</span><span>25–29,9</span><span>≥30</span></div>
+    <p style="margin:12px 0 0">${t("bmi2")}: ${fmt(lo,1)}–${fmt(hi,1)} кг</p>
+    <p class="muted" style="font-size:13px;margin-bottom:0">${t("bmiNote")}</p></div>`;
+}
+
+let kbRows = [{ pid:"", g:"" }];
+function productOptions(sel){
+  return `<option value="">${t("choose")}</option>` + [...S.products].sort((a,b) => L(a,"name").localeCompare(L(b,"name"))).map(p => `<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(L(p,"name"))}</option>`).join("");
+}
+function renderKBJU(m){
+  m.innerHTML = `<div class="card calc" style="max-width:640px"><h2>${t("kbjuTitle")}</h2><p class="muted">${t("kbjuHint")}</p>
+    <div class="kb-row muted" style="font-size:13px;font-weight:600"><span>${t("product")}</span><span>${t("grams")}</span><span></span></div>
+    <div id="kbRows">${kbRows.map((r,i) => `<div class="kb-row">
+      <select onchange="kbRows[${i}].pid=this.value;kbCalc()">${productOptions(r.pid)}</select>
+      <input type="number" inputmode="decimal" value="${r.g}" oninput="kbRows[${i}].g=this.value;kbCalc()">
+      <button class="btn ghost small" onclick="kbRows.splice(${i},1);if(!kbRows.length)kbRows.push({pid:'',g:''});renderKBJU($('main'))">✕</button></div>`).join("")}</div>
+    <button class="btn ghost small" onclick="kbRows.push({pid:'',g:''});renderKBJU($('main'))">${t("addRow")}</button>
+    <div id="kbRes"></div></div>`;
+  kbCalc();
+}
+function kbCalc(){
+  const pm = productMap(); let s = { k:0, p:0, f:0, c:0, g:0 };
+  kbRows.forEach(r => { const p = pm[r.pid], g = parseFloat(r.g); if (p && g > 0) { s.k += p.kcal*g/100; s.p += p.protein*g/100; s.f += p.fat*g/100; s.c += p.carbs*g/100; s.g += g; } });
+  $("kbRes").innerHTML = s.g ? `<div class="result"><div class="muted" style="font-size:13px">${t("sum")} (${fmt(s.g)} ${t("g")})</div>
+    <div class="kbju"><div><b>${fmt(s.k)}</b><span>${t("kcal")}</span></div><div><b>${fmt(s.p,1)}</b><span>${t("protein")}</span></div>
+    <div><b>${fmt(s.f,1)}</b><span>${t("fat")}</span></div><div><b>${fmt(s.c,1)}</b><span>${t("carbs")}</span></div></div>
+    <div class="muted" style="font-size:13px;margin-top:10px">100 ${t("g")}: ${fmt(s.k/s.g*100)} ${t("kcal")}</div></div>` : "";
+}
+
+/* =========================================================
+   ДОСТУП
+   ========================================================= */
+async function renderAccess(m){
+  const role = S.isAdmin ? "roleAdmin" : S.member.kitchen_role === "teacher" ? "roleTeacher" : "roleStudent";
+  const { data:periods } = await sb.from("kitchen_access_periods").select("*").eq("profile_id", S.user.id).eq("status","active").order("created_at",{ascending:false}).limit(1);
+  const p = periods && periods[0];
+  let status = S.hasAccess ? `<span class="badge ok">${t("active")}</span>` : `<span class="badge no">${t("inactive")}</span>`;
+  if (S.hasAccess && p) status += p.is_unlimited ? ` ${t("unlimited")}` : (p.ends_at ? ` ${t("until")} ${new Date(new Date(p.ends_at).getTime()-1).toLocaleDateString("ru-RU")}` : "");
+  const code = S.user.id.slice(0,8).toUpperCase();
+  m.innerHTML = `<div class="card" style="max-width:640px"><h2>${t("accessTitle")}</h2>
+    <p><b>${t("yourRole")}:</b> ${t(role)}</p>
+    <p><b>${t("yourStatus")}:</b> ${status}</p>
+    ${S.member.kitchen_role === "teacher" ? `<p style="margin-top:18px"><b>${t("yourCode")}:</b></p><div class="code">${code}</div><p class="muted">${t("codeHint")}</p>` : ""}
+    ${S.member.kitchen_role === "student" && !S.isAdmin ? (S.member.teacher_id ? `<p>✅ ${t("teacherLinked")}</p>` : `
+      <label class="f">${t("enterCode")}</label><div class="row"><input id="tCode" maxlength="8" style="max-width:200px;text-transform:uppercase">
+      <button class="btn" onclick="attachTeacher()">${t("attach")}</button></div><div class="msg" id="tMsg"></div>`) : ""}
+    ${!S.hasAccess ? `<p class="muted" style="margin-top:18px">${t("accessHow")}</p>` : ""}</div>`;
+}
+async function attachTeacher(){
+  const code = $("tCode").value.trim();
+  const { data } = await sb.rpc("kitchen_join", { p_code: code });
+  if (data === "ok") { toast(t("saved")); await boot(); S.tab = "access"; renderApp(); }
+  else { $("tMsg").textContent = t("codeNotFound"); $("tMsg").className = "msg err"; }
+}
+
+/* ===== Пользователи: админ — все, учитель — свои ученики ===== */
+async function renderUsers(m, admin){
+  const target = admin ? $("admBody") : m;
+  target.innerHTML = `<div class="empty">${t("loading")}</div>`;
+  const { data, error } = await sb.rpc("kitchen_list_users");
+  if (error) return target.innerHTML = `<div class="empty">${t("error")}: ${esc(error.message)}</div>`;
+  if (!data.length) return target.innerHTML = `<div class="card empty">${t("noStudents")}</div>`;
+  const today = new Date(); today.setMonth(today.getMonth()+1);
+  const def = today.toISOString().slice(0,10);
+  target.innerHTML = `<div class="card table-wrap"><table class="list">
+    <tr><th>${t("name")}</th><th>${t("phone")} / ${t("email")}</th>${admin ? `<th>${t("role")}</th>` : ""}<th>${t("access")}</th><th>${t("actions")}</th></tr>
+    ${data.map(u => {
+      const acc = u.has_access ? `<span class="badge ok">${u.access_unlimited ? t("unlimited") : t("until") + " " + new Date(new Date(u.access_until).getTime()-1).toLocaleDateString("ru-RU")}</span>` : `<span class="badge no">${t("inactive")}</span>`;
+      return `<tr><td><b>${esc(u.last_name)} ${esc(u.first_name)}</b></td><td>${esc(u.phone||"")}<br><span class="muted">${esc(u.email||"")}</span></td>
+      ${admin ? `<td><select onchange="setRole('${u.id}',this.value)" style="min-width:110px"><option value="student" ${u.kitchen_role==='student'?'selected':''}>${t("roleStudent")}</option><option value="teacher" ${u.kitchen_role==='teacher'?'selected':''}>${t("roleTeacher")}</option></select></td>` : ""}
+      <td>${acc}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><input type="date" id="d_${u.id}" value="${def}" style="width:150px">
+        <button class="btn small" onclick="setAccess('${u.id}',false,${admin})">${t("give")}</button>
+        <button class="btn small ghost" onclick="setAccess('${u.id}',true,${admin})">${t("forever")}</button>
+        <button class="btn small danger" onclick="closeAccess('${u.id}',${admin})">${t("close")}</button></div></td></tr>`;
+    }).join("")}</table></div>`;
+}
+async function setAccess(id, unlimited, admin){
+  const d = $("d_" + id).value;
+  const { data } = await sb.rpc("kitchen_set_access", { p_user:id, p_until: unlimited ? null : d, p_unlimited: unlimited });
+  toast(data === "ok" ? t("saved") : t("error")); admin ? renderUsers(null, true) : renderUsers($("main"), false);
+}
+async function closeAccess(id, admin){
+  const { data } = await sb.rpc("kitchen_set_access", { p_user:id, p_until:null, p_unlimited:false });
+  toast(data === "ok" ? t("saved") : t("error")); admin ? renderUsers(null, true) : renderUsers($("main"), false);
+}
+async function setRole(id, role){ const { data } = await sb.rpc("kitchen_set_role", { p_user:id, p_role:role }); toast(data === "ok" ? t("saved") : t("error")); }
+
+/* =========================================================
+   АДМИН-ПАНЕЛЬ
+   ========================================================= */
+let admTab = "recipes";
+function renderAdmin(m){
+  const tabs = [["recipes","recipesAdm"],["serving","servingAdm"],["products","productsAdm"],["sections","sectionsAdm"],["users","users"]];
+  m.innerHTML = `<div class="subtabs">${tabs.map(([k,l]) => `<button class="chip ${admTab===k?'on':''}" onclick="admTab='${k}';renderAdmin($('main'))">${t(l)}</button>`).join("")}</div><div id="admBody"></div>`;
+  if (admTab === "recipes") admRecipes();
+  if (admTab === "serving") admServing();
+  if (admTab === "products") admProducts();
+  if (admTab === "sections") admSections();
+  if (admTab === "users") renderUsers(null, true);
+}
+const secName = id => { const s = S.sections.find(x => x.id === id); return s ? L(s,"name") : ""; };
+
+async function admRecipes(){
+  const b = $("admBody");
+  const { data } = await sb.from("kitchen_recipes").select("id,title_ru,title_kz,section_id,is_published,created_at").order("created_at",{ascending:false});
+  b.innerHTML = `<div class="row" style="margin-bottom:12px"><button class="btn" onclick="recipeForm(null)">${t("newRecipe")}</button></div>
+    <div class="card table-wrap"><table class="list"><tr><th>${t("titleRu")}</th><th>${t("section")}</th><th></th><th></th></tr>
+    ${(data||[]).map(r => `<tr><td><b>${esc(L(r,"title"))}</b></td><td>${esc(secName(r.section_id))}</td>
+      <td>${r.is_published ? `<span class="badge ok">✓</span>` : `<span class="badge">${t("draft")}</span>`}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><button class="btn small" onclick="recipeForm('${r.id}')">${t("edit")}</button>
+      <button class="btn small danger" onclick="delRow('kitchen_recipes','${r.id}',admRecipes)">${t("del")}</button></div></td></tr>`).join("")}</table></div>`;
+}
+let ingRows = [];
+async function recipeForm(id){
+  let r = { section_id: S.sections[0]?.id, servings:4, is_published:false };
+  ingRows = [];
+  if (id) {
+    const { data } = await sb.from("kitchen_recipes").select("*, kitchen_recipe_ingredients(*)").eq("id", id).maybeSingle();
+    r = data; ingRows = (data.kitchen_recipe_ingredients||[]).sort((a,b)=>a.sort_order-b.sort_order).map(i => ({ pid:i.product_id||"", g:i.grams??"", lr:i.label_ru, lk:i.label_kz }));
+  }
+  if (!ingRows.length) ingRows.push({ pid:"", g:"", lr:"", lk:"" });
+  if (!S.products.length) { const p = await sb.from("kitchen_products").select("*").order("name_ru"); S.products = p.data || []; }
+  const v = k => esc(r[k] ?? "");
+  $("admBody").innerHTML = `<div class="card">
+    <h2>${id ? t("edit") : t("newRecipe")}</h2>
+    <label class="f">${t("section")}</label><select id="fSec">${S.sections.map(s => `<option value="${s.id}" ${s.id===r.section_id?"selected":""}>${esc(L(s,"name"))}</option>`).join("")}</select>
+    <div class="grid2"><div><label class="f">${t("titleRu")}</label><input id="fTr" value="${v("title_ru")}"></div><div><label class="f">${t("titleKz")}</label><input id="fTk" value="${v("title_kz")}"></div></div>
+    <div class="grid2"><div><label class="f">${t("introRu")}</label><textarea id="fIr">${v("intro_ru")}</textarea></div><div><label class="f">${t("introKz")}</label><textarea id="fIk">${v("intro_kz")}</textarea></div></div>
+    <div class="grid2"><div><label class="f">${t("servings")}</label><input id="fSv" type="number" min="1" value="${v("servings")}"></div><div><label class="f">${t("time")}</label><input id="fTm" type="number" value="${v("time_min")}"></div></div>
+    <label class="f">${t("ingEdit")}</label><div id="ingBox"></div>
+    <button class="btn ghost small" onclick="ingRows.push({pid:'',g:'',lr:'',lk:''});drawIng()">${t("addRow")}</button>
+    <div class="grid2"><div><label class="f">${t("stepsRu")}</label><textarea id="fSr" style="min-height:180px">${v("steps_ru")}</textarea></div><div><label class="f">${t("stepsKz")}</label><textarea id="fSk" style="min-height:180px">${v("steps_kz")}</textarea></div></div>
+    <div class="grid2"><div><label class="f">${t("photo")}</label><input id="fPf" type="file" accept="image/*"></div><div><label class="f">${t("photoUrl")}</label><input id="fPu" value="${v("photo_url")}"></div></div>
+    <label class="f">${t("video")}</label><input id="fVd" value="${v("video_url")}">
+    <div class="grid2"><div><label class="f">${t("sourceRu")}</label><input id="fSoR" value="${v("source_ru")}"></div><div><label class="f">${t("sourceKz")}</label><input id="fSoK" value="${v("source_kz")}"></div></div>
+    <label class="row" style="margin-top:14px;cursor:pointer"><input id="fPub" type="checkbox" style="width:auto" ${r.is_published?"checked":""}> ${t("published")}</label>
+    <div class="row" style="margin-top:16px"><button class="btn" onclick="saveRecipe(${id ? `'${id}'` : "null"})">${t("save")}</button><button class="btn ghost" onclick="admRecipes()">${t("cancel")}</button></div>
+    <div class="msg" id="fMsg"></div></div>`;
+  drawIng();
+}
+function drawIng(){
+  $("ingBox").innerHTML = ingRows.map((r,i) => `<div class="ing-edit">
+    <select onchange="ingRows[${i}].pid=this.value">${productOptions(r.pid)}</select>
+    <input type="number" placeholder="${t("g")}" value="${esc(r.g)}" oninput="ingRows[${i}].g=this.value">
+    <input class="lab" placeholder="${t("labelRu")}" value="${esc(r.lr||"")}" oninput="ingRows[${i}].lr=this.value">
+    <input class="lab" placeholder="${t("labelKz")}" value="${esc(r.lk||"")}" oninput="ingRows[${i}].lk=this.value">
+    <button class="btn ghost small" onclick="ingRows.splice(${i},1);drawIng()">✕</button></div>`).join("");
+}
+async function uploadPhoto(inputId){
+  const f = $(inputId)?.files?.[0]; if (!f) return null;
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${(f.name.split(".").pop()||"jpg").toLowerCase()}`;
+  const { error } = await sb.storage.from(CONFIG.mediaBucket).upload(path, f, { contentType:f.type, upsert:false });
+  if (error) throw error;
+  return sb.storage.from(CONFIG.mediaBucket).getPublicUrl(path).data.publicUrl;
+}
+async function saveRecipe(id){
+  const msg = $("fMsg"); msg.className = "msg"; msg.textContent = t("loading");
+  try {
+    if (!$("fTr").value.trim()) throw new Error(t("titleRu"));
+    const photo = await uploadPhoto("fPf");
+    const row = { section_id:$("fSec").value, title_ru:$("fTr").value.trim(), title_kz:$("fTk").value.trim(),
+      intro_ru:$("fIr").value, intro_kz:$("fIk").value, steps_ru:$("fSr").value, steps_kz:$("fSk").value,
+      servings: parseInt($("fSv").value) || 4, time_min: parseInt($("fTm").value) || null,
+      photo_url: photo || $("fPu").value.trim() || null, video_url:$("fVd").value.trim() || null,
+      source_ru:$("fSoR").value.trim(), source_kz:$("fSoK").value.trim(), is_published:$("fPub").checked, updated_at:new Date().toISOString() };
+    let rid = id;
+    if (id) { const { error } = await sb.from("kitchen_recipes").update(row).eq("id", id); if (error) throw error; }
+    else { row.created_by = S.user.id; const { data, error } = await sb.from("kitchen_recipes").insert(row).select("id").single(); if (error) throw error; rid = data.id; }
+    await sb.from("kitchen_recipe_ingredients").delete().eq("recipe_id", rid);
+    const ins = ingRows.filter(r => r.pid || (r.lr||"").trim()).map((r,i) => ({ recipe_id:rid, product_id:r.pid || null,
+      grams: parseFloat(r.g) || null, label_ru:(r.lr||"").trim(), label_kz:(r.lk||"").trim(), sort_order:i }));
+    if (ins.length) { const { error } = await sb.from("kitchen_recipe_ingredients").insert(ins); if (error) throw error; }
+    toast(t("saved")); admRecipes();
+  } catch(e) { msg.className = "msg err"; msg.textContent = t("error") + ": " + (e.message || e); }
+}
+async function delRow(table, id, after){
+  if (!confirmBox()) return;
+  const { error } = await sb.from(table).delete().eq("id", id);
+  toast(error ? t("error") + ": " + error.message : t("saved")); after();
+}
+function confirmBox(){ return window.confirm(t("confirmDel")); }
+
+async function admServing(){
+  const b = $("admBody");
+  const { data } = await sb.from("kitchen_serving").select("*").order("sort_order");
+  b.innerHTML = `<div class="row" style="margin-bottom:12px"><button class="btn" onclick="servingForm(null)">${t("newServing")}</button></div>
+    <div class="card table-wrap"><table class="list"><tr><th>${t("titleRu")}</th><th></th><th></th></tr>
+    ${(data||[]).map(a => `<tr><td><b>${esc(L(a,"title"))}</b></td><td>${a.is_published ? `<span class="badge ok">✓</span>` : `<span class="badge">${t("draft")}</span>`}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><button class="btn small" onclick="servingForm('${a.id}')">${t("edit")}</button>
+      <button class="btn small danger" onclick="delRow('kitchen_serving','${a.id}',admServing)">${t("del")}</button></div></td></tr>`).join("")}</table></div>`;
+  S._serving = data || [];
+}
+function servingForm(id){
+  const a = id ? S._serving.find(x => x.id === id) : { is_published:false, sort_order:0 };
+  const v = k => esc(a[k] ?? "");
+  $("admBody").innerHTML = `<div class="card"><h2>${id ? t("edit") : t("newServing")}</h2>
+    <div class="grid2"><div><label class="f">${t("titleRu")}</label><input id="sTr" value="${v("title_ru")}"></div><div><label class="f">${t("titleKz")}</label><input id="sTk" value="${v("title_kz")}"></div></div>
+    <div class="grid2"><div><label class="f">${t("bodyRu")}</label><textarea id="sBr" style="min-height:200px">${v("body_ru")}</textarea></div><div><label class="f">${t("bodyKz")}</label><textarea id="sBk" style="min-height:200px">${v("body_kz")}</textarea></div></div>
+    <div class="grid2"><div><label class="f">${t("photo")}</label><input id="sPf" type="file" accept="image/*"></div><div><label class="f">${t("photoUrl")}</label><input id="sPu" value="${v("photo_url")}"></div></div>
+    <div class="grid2"><div><label class="f">${t("sourceRu")}</label><input id="sSoR" value="${v("source_ru")}"></div><div><label class="f">${t("sourceKz")}</label><input id="sSoK" value="${v("source_kz")}"></div></div>
+    <label class="row" style="margin-top:14px;cursor:pointer"><input id="sPub" type="checkbox" style="width:auto" ${a.is_published?"checked":""}> ${t("published")}</label>
+    <div class="row" style="margin-top:16px"><button class="btn" onclick="saveServing(${id ? `'${id}'` : "null"})">${t("save")}</button><button class="btn ghost" onclick="admServing()">${t("cancel")}</button></div>
+    <div class="msg" id="fMsg"></div></div>`;
+}
+async function saveServing(id){
+  try {
+    const photo = await uploadPhoto("sPf");
+    const row = { title_ru:$("sTr").value.trim(), title_kz:$("sTk").value.trim(), body_ru:$("sBr").value, body_kz:$("sBk").value,
+      photo_url: photo || $("sPu").value.trim() || null, source_ru:$("sSoR").value.trim(), source_kz:$("sSoK").value.trim(), is_published:$("sPub").checked };
+    if (!row.title_ru) throw new Error(t("titleRu"));
+    const { error } = id ? await sb.from("kitchen_serving").update(row).eq("id", id) : await sb.from("kitchen_serving").insert(row);
+    if (error) throw error; toast(t("saved")); admServing();
+  } catch(e) { $("fMsg").className = "msg err"; $("fMsg").textContent = t("error") + ": " + (e.message || e); }
+}
+
+async function admProducts(){
+  const { data } = await sb.from("kitchen_products").select("*").order("name_ru");
+  S.products = (data || []).filter(p => p.is_active);
+  $("admBody").innerHTML = `<div class="card"><h3>${t("newProduct")} <span class="muted" style="font-size:14px">(${t("per100")})</span></h3>
+    <div class="grid2"><input id="pNr" placeholder="${t("nameRu")}"><input id="pNk" placeholder="${t("nameKz")}"></div>
+    <div class="row" style="margin-top:8px"><input id="pK" type="number" step="0.1" placeholder="${t("kcal")}" style="width:110px"><input id="pP" type="number" step="0.1" placeholder="${t("protein")}" style="width:110px">
+    <input id="pF" type="number" step="0.1" placeholder="${t("fat")}" style="width:110px"><input id="pC" type="number" step="0.1" placeholder="${t("carbs")}" style="width:110px">
+    <button class="btn" onclick="addProduct()">${t("save")}</button></div></div>
+    <div class="card table-wrap" style="margin-top:14px"><table class="list"><tr><th>${t("product")}</th><th>${t("kcal")}</th><th>${t("protein")}</th><th>${t("fat")}</th><th>${t("carbs")}</th><th></th></tr>
+    ${(data||[]).map(p => `<tr><td><b>${esc(p.name_ru)}</b><br><span class="muted">${esc(p.name_kz)}</span></td><td>${p.kcal}</td><td>${p.protein}</td><td>${p.fat}</td><td>${p.carbs}</td>
+      <td><button class="btn small danger" onclick="delRow('kitchen_products','${p.id}',admProducts)">${t("del")}</button></td></tr>`).join("")}</table></div>`;
+}
+async function addProduct(){
+  const row = { name_ru:$("pNr").value.trim(), name_kz:$("pNk").value.trim(), kcal:parseFloat($("pK").value), protein:parseFloat($("pP").value)||0, fat:parseFloat($("pF").value)||0, carbs:parseFloat($("pC").value)||0 };
+  if (!row.name_ru || isNaN(row.kcal)) return toast(t("fillAll"));
+  const { error } = await sb.from("kitchen_products").insert(row);
+  toast(error ? t("error") + ": " + error.message : t("saved")); admProducts();
+}
+
+async function admSections(){
+  const { data } = await sb.from("kitchen_sections").select("*").order("kind").order("sort_order");
+  const kinds = { cuisine:t("kindCuisine"), pp:t("kindPP"), veg:t("kindVeg") };
+  $("admBody").innerHTML = `<div class="card"><h3>${t("newSection")}</h3><div class="row">
+    <select id="sKind" style="width:170px">${Object.entries(kinds).map(([k,l]) => `<option value="${k}">${l}</option>`).join("")}</select>
+    <input id="sNr" placeholder="${t("nameRu")}" style="flex:1;min-width:160px"><input id="sNk" placeholder="${t("nameKz")}" style="flex:1;min-width:160px">
+    <button class="btn" onclick="addSection()">${t("save")}</button></div></div>
+    <div class="card table-wrap" style="margin-top:14px"><table class="list"><tr><th>${t("kind")}</th><th>${t("nameRu")}</th><th>${t("nameKz")}</th><th></th></tr>
+    ${(data||[]).map(s => `<tr><td>${kinds[s.kind]}</td><td>${esc(s.name_ru)}</td><td>${esc(s.name_kz)}</td>
+      <td><button class="btn small danger" onclick="delRow('kitchen_sections','${s.id}',reloadSections)">${t("del")}</button></td></tr>`).join("")}</table></div>`;
+}
+async function addSection(){
+  const row = { kind:$("sKind").value, name_ru:$("sNr").value.trim(), name_kz:$("sNk").value.trim(), sort_order:99 };
+  if (!row.name_ru || !row.name_kz) return toast(t("fillAll"));
+  const { error } = await sb.from("kitchen_sections").insert(row);
+  toast(error ? t("error") + ": " + error.message : t("saved")); reloadSections();
+}
+async function reloadSections(){ const { data } = await sb.from("kitchen_sections").select("*").eq("is_active", true).order("sort_order"); S.sections = data || []; admSections(); }
+
+/* ===== Старт ===== */
+document.documentElement.dataset.lang = S.lang;
+document.title = CONFIG.name[S.lang];
+sb.auth.onAuthStateChange((ev) => { if (ev === "PASSWORD_RECOVERY") setTimeout(async () => {
+  const np = prompt(S.lang === "kz" ? "Жаңа құпиясөз (кемінде 6 таңба):" : "Новый пароль (минимум 6 символов):");
+  if (np && np.length >= 6) { await sb.auth.updateUser({ password: np }); toast(t("saved")); boot(); }
+}, 300); });
+boot();
+</script>
+</body>
+</html>
